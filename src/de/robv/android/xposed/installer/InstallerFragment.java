@@ -464,6 +464,10 @@ public class InstallerFragment extends Fragment {
 		return checkAppProcessCompatibility();
 	}
 
+	/**
+	 * 检查兼容性
+	 * @return
+	 */
 	private boolean checkAppProcessCompatibility() {
 		try {
 			if (APP_PROCESS_NAME == null)
@@ -498,6 +502,10 @@ public class InstallerFragment extends Fragment {
 		}
 	}
 
+	/**
+	 * 已激活的模块
+	 * @return
+	 */
 	private int getInstalledAppProcessVersion() {
 		try {
 			return getAppProcessVersion(new FileInputStream("/system/bin/app_process"));
@@ -555,6 +563,12 @@ public class InstallerFragment extends Fragment {
 		return JAR_LATEST_VERSION;
 	}
 
+	/**
+	 * 从assets/VERSION文件中读取jar版本号
+	 * @param is
+	 * @return
+	 * @throws IOException
+	 */
 	private static int getJarVersion(InputStream is) throws IOException {
 		JarInputStream jis = new JarInputStream(is);
 		JarEntry entry;
@@ -608,7 +622,7 @@ public class InstallerFragment extends Fragment {
 	private boolean install() {
 		final int installMode = getInstallMode();
 
-		if (!startShell())
+		if (!startShell())//如果正在执行shell,返回，检查是否已root
 			return false;
 
 		List<String> messages = new LinkedList<String>();
@@ -616,14 +630,13 @@ public class InstallerFragment extends Fragment {
 		try {
 			messages.add(getString(R.string.sdcard_location, XposedApp.getInstance().getExternalFilesDir(null)));
 			messages.add("");
-
 			messages.add(getString(R.string.file_copying, "Xposed-Disabler-Recovery.zip"));
 			if (AssetUtil.writeAssetToSdcardFile("Xposed-Disabler-Recovery.zip", 00644) == null) {
 				messages.add("");
 				messages.add(getString(R.string.file_extract_failed, "Xposed-Disabler-Recovery.zip"));
 				return false;
 			}
-
+			//此处替换了文件
 			File appProcessFile = AssetUtil.writeAssetToFile(APP_PROCESS_NAME, new File(XposedApp.BASE_DIR + "bin/app_process"), 00700);
 			if (appProcessFile == null) {
 				showAlert(getString(R.string.file_extract_failed, "app_process"));
@@ -640,7 +653,7 @@ public class InstallerFragment extends Fragment {
 
 				if (new File("/system/bin/app_process.orig").exists()) {
 					messages.add(getString(R.string.file_backup_already_exists, "/system/bin/app_process.orig"));
-				} else {
+				} else {//备份之前的文件
 					if (mRootUtil.executeWithBusybox("cp -a /system/bin/app_process /system/bin/app_process.orig", messages) != 0) {
 						messages.add("");
 						messages.add(getString(R.string.file_backup_failed, "/system/bin/app_process"));
@@ -677,7 +690,7 @@ public class InstallerFragment extends Fragment {
 				if (!prepareManualFlash(messages, "Xposed-Installer-Recovery.zip"))
 					return false;
 			}
-
+			///data/data/de.robv.android.xposed.installer/conf/disabled
 			File blocker = new File(XposedApp.BASE_DIR + "conf/disabled");
 			if (blocker.exists()) {
 				messages.add(getString(R.string.file_removing, blocker.getAbsolutePath()));
@@ -690,7 +703,7 @@ public class InstallerFragment extends Fragment {
 
 			messages.add(getString(R.string.file_copying, "XposedBridge.jar"));
 			File jarFile = AssetUtil.writeAssetToFile("XposedBridge.jar", new File(JAR_PATH_NEWVERSION), 00644);
-			if (jarFile == null) {
+			if (jarFile == null) {///data/data/de.robv.android.xposed.installer/bin/XposedBridge.jar.newversion
 				messages.add("");
 				messages.add(getString(R.string.file_extract_failed, "XposedBridge.jar"));
 				return false;
